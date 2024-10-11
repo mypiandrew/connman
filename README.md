@@ -8,6 +8,7 @@ This repository contains a cellular network connection supervisor script for Ras
 - `/usr/local/bin/qmi-network-raw`
 - `/usr/local/bin/modemstat`
 - `/etc/sim.conf`
+- `/usr/local/bin/softresetmodem.sh`
 - `/etc/qmi-network.conf`
 - `/etc/udev/rules.d/20-modem-ec2x.rules`
 - `/etc/udev/rules.d/20-modem-7xxx.rules`
