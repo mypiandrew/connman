@@ -1,6 +1,6 @@
 # Modem Supervisor Script for RAW-IP Modems
 
-This repository contains a supervisor script for managing RAW-IP modems, primarily designed for use with cellular networks.
+This repository contains a cellular network connection supervisor script for Raspberry Pi mPCIe modems 
 
 ## Included Files and Locations
 
@@ -91,11 +91,10 @@ Clearing state at /tmp/qmi-network-state-cdc-wdm0...
 
 ## Features
 
-- Connection management for RAW-IP modems
+- Connection management for SIMCOM/QUECTEL RAW-IP modems (e.g. SIM7600, EG25-G EC21-G EC25-E)
 - Network registration and signal strength monitoring
-- DHCP client for IP address acquisition
-- End-to-end transaction checks
-- Background connection monitoring process with automatic checks for network connection viability
+- UDHCP client for automatic RAW IP address acquisition
+- Background connection monitoring process with automatic End-to-end checks for network connection viability
 
 ## Configuration
 
@@ -105,7 +104,9 @@ The script uses configuration files located in `/etc/`:
 - `qmi-network.conf`: QMI network configuration
 
 Make sure to configure these files according to your network requirements.
+
 Edit variables at top of script for network check intervals
+
 Can log to /var/log/connman.log
 
 ## Troubleshooting
