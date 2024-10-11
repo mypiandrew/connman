@@ -52,7 +52,7 @@ udhcpc: lease of 10.118.57.75 obtained, lease time 7200
 ```bash
 oot@raspberrypi:/usr/local/bin# ./connman.sh start-monitor
 2024-10-11 14:07:58 - ConnMan: Monitor process spawned succssfully PID 16541
- 2024-10-11 14:08:00 - ConnMan: Running End-to-end transaction check (attempt 1/3)
+2024-10-11 14:08:00 - ConnMan: Running End-to-end transaction check (attempt 1/3)
 2024-10-11 14:08:02 - ConnMan: End-to-end check successful
 2024-10-11 14:08:02 - ConnMan: Network check AOK
 root@raspberrypi:/usr/local/bin#
