@@ -17,6 +17,7 @@ fi
 cp connman /usr/local/bin/
 cp qmi-network-raw /usr/local/bin/
 cp modemstat /usr/local/bin/
+cp softresetmodem.sh /usr/local/bin
 cp sim.conf /etc/
 cp qmi-network.conf /etc/
 cp 20-modem-ec2x.rules /etc/udev/rules.d/
@@ -26,6 +27,7 @@ cp 20-modem-7xxx.rules /etc/udev/rules.d/
 chmod 755 /usr/local/bin/connman
 chmod 755 /usr/local/bin/qmi-network-raw
 chmod 755 /usr/local/bin/modemstat
+chmod 755 /usr/local/bin/softresetmodem.sh
 chmod 644 /etc/sim.conf
 chmod 644 /etc/qmi-network.conf
 chmod 644 /etc/udev/rules.d/20-modem-ec2x.rules
