@@ -37,8 +37,12 @@ root@raspberrypi:/usr/local/bin# ./connman.sh start
 ### Example: Starting the Monitor
 
 ```bash
-root@raspberrypi:/usr/local/bin# ./connman.sh start-monitor
+oot@raspberrypi:/usr/local/bin# ./connman.sh start-monitor
 2024-10-11 14:07:58 - ConnMan: Monitor process spawned succssfully PID 16541
+ 2024-10-11 14:08:00 - ConnMan: Running End-to-end transaction check (attempt 1/3)
+2024-10-11 14:08:02 - ConnMan: End-to-end check successful
+2024-10-11 14:08:02 - ConnMan: Network check AOK
+root@raspberrypi:/usr/local/bin#
 ```
 
 ### Example: Stopping the Monitor
@@ -64,7 +68,7 @@ root@raspberrypi:/usr/local/bin# ./connman.sh stop
 - Network registration and signal strength monitoring
 - DHCP client for IP address acquisition
 - End-to-end transaction checks
-- Connection monitoring with automatic checks
+- Background connection monitoring process with automatic checks for network connection viability
 
 ## Configuration
 
@@ -74,6 +78,8 @@ The script uses configuration files located in `/etc/`:
 - `qmi-network.conf`: QMI network configuration
 
 Make sure to configure these files according to your network requirements.
+Edit variables at top of script for network check intervals
+Can log to /var/log/connman.log
 
 ## Troubleshooting
 
