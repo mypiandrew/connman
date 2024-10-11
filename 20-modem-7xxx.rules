@@ -1,0 +1,35 @@
+############################################################################
+# 20-modem-7xxx-rules
+#
+# SIMCOM 7xxx Modem Rules
+#
+# Find the mPCIe modem and create symlinks for it
+#
+# /dev/modemS3 = Modem PPP Data port
+#                Used to instantiate a PPP data connection only
+#
+#
+# /dev/modemS2 = Modem AT command port, all AT commands supported.
+#                Can be used when PPP Data port active.
+#
+# /dev/modemS1 = NMEA Feed (activated by AT+CGPSCOLD and pre-configured by AT+CGPSNMEA=xxx)
+#
+#
+# Author:       Andrew O'Connell
+# Last Revised: 30st September 2024
+############################################################################
+
+
+KERNELS=="1-1*",SUBSYSTEMS=="usb",ATTRS{idVendor}!="1e0e",GOTO="modem_SIMCOM_end"
+
+KERNELS=="1-1*",SUBSYSTEMS=="usb", DRIVERS=="option", ATTRS{bInterfaceNumber}=="00",SYMLINK+="modemS0"
+KERNELS=="1-1*",SUBSYSTEMS=="usb", DRIVERS=="option", ATTRS{bInterfaceNumber}=="01",SYMLINK+="modemS1"
+KERNELS=="1-1*",SUBSYSTEMS=="usb", DRIVERS=="option", ATTRS{bInterfaceNumber}=="02",SYMLINK+="modemS2"
+KERNELS=="1-1*",SUBSYSTEMS=="usb", DRIVERS=="option", ATTRS{bInterfaceNumber}=="03",SYMLINK+="modemS3"
+
+KERNELS=="1-1*",SUBSYSTEMS=="usb", DRIVERS=="option", ATTRS{bInterfaceNumber}=="01",SYMLINK+="modemGPS"
+KERNELS=="1-1*",SUBSYSTEMS=="usb", DRIVERS=="option", ATTRS{bInterfaceNumber}=="02",SYMLINK+="modemAT"
+KERNELS=="1-1*",SUBSYSTEMS=="usb", DRIVERS=="option", ATTRS{bInterfaceNumber}=="03",SYMLINK+="modemPPP"
+
+
+LABEL="modem_SIMCOM_end"
