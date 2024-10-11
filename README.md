@@ -30,7 +30,20 @@ root@raspberrypi:/usr/local/bin# ./connman.sh start
 2024-10-11 14:07:22 - ConnMan: Registered OK on network : REGISTERED-HOME
 2024-10-11 14:07:22 - ConnMan: Network ID : vodafone UK  Mode : EDGE / GSM 900
 2024-10-11 14:07:22 - ConnMan: Connecting To Cellular Network
-...
+Loading profile at /etc/qmi-network.conf...
+    APN: pp.vodafone.co.uk
+    APN user: unset
+    APN password: unset
+    qmi-proxy: no
+Starting network with 'qmicli -d /dev/cdc-wdm0 --device-open-net=net-raw-ip|net-no-qos-header --wds-start-network=apn='pp.vodafone.co.uk',ip-type=4  --client-no-release-cid '...
+Saving state at /tmp/qmi-network-state-cdc-wdm0... (CID: 20)
+Saving state at /tmp/qmi-network-state-cdc-wdm0... (PDH: 2267975568)
+Network started successfully
+2024-10-11 14:07:28 - ConnMan: Modem Connected OK
+udhcpc: started, v1.30.1
+udhcpc: sending discover
+udhcpc: sending select for 10.118.57.75
+udhcpc: lease of 10.118.57.75 obtained, lease time 7200
 2024-10-11 14:07:29 - ConnMan: Modem connection started successfully.
 ```
 
@@ -58,7 +71,21 @@ root@raspberrypi:/usr/local/bin# ./connman.sh stop-monitor
 root@raspberrypi:/usr/local/bin# ./connman.sh stop
 2024-10-11 14:08:32 - ConnMan: Monitor is not running.
 2024-10-11 14:08:32 - ConnMan: Disconnecting From Cellular Network
-...
+Loading profile at /etc/qmi-network.conf...
+    APN: pp.vodafone.co.uk
+    APN user: unset
+    APN password: unset
+    qmi-proxy: no
+Loading previous state from /tmp/qmi-network-state-cdc-wdm0...
+    Previous CID: 20
+    Previous PDH: 2267975568
+Stopping network with 'qmicli -d /dev/cdc-wdm0 --wds-stop-network=2267975568 --client-cid=20 '...
+Network stopped successfully
+Clearing state at /tmp/qmi-network-state-cdc-wdm0...
+2024-10-11 14:08:38 - ConnMan: Modem Disconnected OK
+2024-10-11 14:08:38 - ConnMan: Stopping wwan0 interface
+2024-10-11 14:08:38 - ConnMan: Terminating udhcpc process for wwan0 (PID: 16529)
+2024-10-11 14:08:40 - ConnMan: wwan0 interface stopped
 2024-10-11 14:08:40 - ConnMan: Modem connection stopped successfully.
 ```
 
