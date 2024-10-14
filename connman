@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# QMI Modem Comms Script  - embeddedpi.com
+# Connection ManagerScript  - embeddedpi.com
 #
-# Release : 09/04/2018  RAW IP VERSION
+# Release : 14/10/2024  RAW IP VERSION
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -22,7 +22,8 @@
 DoEndToEndCheck=true
 #DoEndToEndCheck=false
 
-LOG=true
+#LOG=true # If enabling make sure a log rotate process is enabled
+LOG=false 
 QUIET=false # minimal output
 LOG_FILE="/var/log/connman.log"
 PID_FILE="/var/run/modem-monitor.pid"
@@ -35,11 +36,12 @@ STARTUP_DELAY="2m"
 CheckInternal="30m" # 30 min check period
 
 # Function to log messages
-function log_message() {
+function log_message() 
+{
     local message="$1"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-	if [ "$QUIET" = false ]; then
-		echo "$timestamp - ConnMan: $message"
+    if [ "$QUIET" = false ]; then
+        echo "$timestamp - ConnMan: $message"
     fi    
     if [ "$LOG" = true ]; then
         echo "$timestamp - $message" >> "$LOG_FILE"
@@ -50,7 +52,8 @@ function log_message() {
 # Description: Brings down the wwan0 interface and terminates the associated udhcpc process
 # Parameters: None
 # Returns: None
-function stop_wwan0() {
+function stop_wwan0() 
+{
     log_message "Stopping wwan0 interface"
     
     # Terminate udhcpc process for wwan0
@@ -71,7 +74,8 @@ function stop_wwan0() {
 # Description: Checks for the existence of key commands and interfaces
 # Parameters: None
 # Returns: Exits with error if any dependency is missing
-function check_dependencies() {
+function check_dependencies() 
+{
     local missing_dependencies=()
 
     # Check for required commands
@@ -116,13 +120,13 @@ function check_dependencies() {
 # Returns: 0 on success
 function init
 {
-	# Start from a clean slate
-	stop_wwan0
+    # Start from a clean slate
+    stop_wwan0
     if ip link show wwan1 &> /dev/null; then
         ifconfig wwan1 down
     fi
-	qmi-network-raw /dev/cdc-wdm0 stop >/dev/null
-	return 0
+    qmi-network-raw /dev/cdc-wdm0 stop >/dev/null
+    return 0
 }
 
 # Function: checkRegState
@@ -131,80 +135,83 @@ function init
 # Returns: 0 if registered successfully, 1 if failed to register
 function checkRegState
 {
-	# Get details from modem using modemstat
-	#MODEMVENDOR=QUECTEL
-	#IMEI=867624063556764
-	#SIM=89441000304824727446
-	#SIMSTATUS=READY
-	#SIGNAL=21
-	#REGMODE=AUTOMATIC
-	#NETWORKID='vodafone UK'
-	#REGSTATE=REGISTERED-HOME
-	#MODEMMODE='EDGE'
-	#MODEMBAND='GSM 900'
 
-	source <(/usr/local/bin/modemstat -q)
 
-	if [ "$SIGNAL" == "" ]
-	then
-		echo "No valid signal obtained, check modemstat can be run"
-		log_message "No valid signal obtained, check modemstat can be run"
-		exit 1 
-	fi
 
-	# let's verify that we are registered on cellular the network before we proceed
-	while true
-	do
+    # Get details from modem using modemstat
+    #MODEMVENDOR=QUECTEL
+    #IMEI=867624063556764
+    #SIM=89441000304824727446
+    #SIMSTATUS=READY
+    #SIGNAL=21
+    #REGMODE=AUTOMATIC
+    #NETWORKID='vodafone UK'
+    #REGSTATE=REGISTERED-HOME
+    #MODEMMODE='EDGE'
+    #MODEMBAND='GSM 900'
 
-		if (( $SIGNAL >= 10 ))
-		then
-			log_message "Signal strength - $SIGNAL/32"
-		fi
+    source <(/usr/local/bin/modemstat -q)
 
-		if (( $SIGNAL <= 10  && $SIGNAL > 5 ))
-		then
-			log_message "Signal strength low, re-orient or upgrade antenna  - $SIGNAL/32"
-				
-		fi
+    if [ "$SIGNAL" == "" ]
+    then
+        echo "No valid signal obtained, check modemstat can be run"
+        log_message "No valid signal obtained, check modemstat can be run"
+        exit 1 
+    fi
 
-		if (( $SIGNAL <= 5 ))
-		then
-			log_message "Signal strength very low, expect problems obtaining a connection, re-orient or upgrade antenna  - $SIGNAL/32"
-		fi
+    # let's verify that we are registered on cellular the network before we proceed
+    while true
+    do
 
-		if (( $SIGNAL == 99 ))
-		then
-			log_message "No signal detected - Check antenna pigtail & antenna. "
-		fi
+        if (( $SIGNAL >= 10 ))
+        then
+            log_message "Signal strength - $SIGNAL/32"
+        fi
 
-		
-		if [ "$REGSTATE" == "REGISTERED-HOME" ] || [ "$REGSTATE" == "REGISTERED-ROAMING" ]
-		then
-			log_message "Registered OK on network : $REGSTATE"
-			log_message "Network ID : $NETWORKID  Mode : $MODEMMODE / $MODEMBAND"
-			return 0
-		fi
+        if (( $SIGNAL <= 10  && $SIGNAL > 5 ))
+        then
+            log_message "Signal strength low, re-orient or upgrade antenna  - $SIGNAL/32"
+                
+        fi
 
-		if [ "$REGSTATE" == "NOT-REGISTERED" ] || [ "$REGSTATE" == "DENIED" ]
-		then
-			log_message "Failed to register on network"
-			# we're in "Not Registered, Not searching" or "Registration denied" state
-			# hard reset the modem and try again
-			log_message "Resetting Modem..."
-			/usr/local/bin/softresetmodem.sh
-			log_message "Giving modem 20 seconds to register..."
-			sleep 20
-			return 1
-		fi
-		if [ "$REGSTATE" == "SEARCHING" ] || [ "$REGSTATE" == "DENIED" ] 
-		then
-			log_message "Searching for network..."
-			# We're still waiting for the modem to connect to the network
-			sleep 10
-			return 1
-		fi
-			
-	done
+        if (( $SIGNAL <= 5 ))
+        then
+            log_message "Signal strength very low, expect problems obtaining a connection, re-orient or upgrade antenna  - $SIGNAL/32"
+        fi
+
+        if (( $SIGNAL == 99 ))
+        then
+            log_message "No signal detected - Check antenna pigtail & antenna. "
+        fi
+
+        
+        if [ "$REGSTATE" == "REGISTERED-HOME" ] || [ "$REGSTATE" == "REGISTERED-ROAMING" ]
+        then
+            log_message "Registered OK on network : $REGSTATE"
+            log_message "Network ID : $NETWORKID  Mode : $MODEMMODE / $MODEMBAND"
+            return 0
+        fi
+
+        if [ "$REGSTATE" == "NOT-REGISTERED" ] || [ "$REGSTATE" == "DENIED" ]
+        then
+            log_message "Failed to register on network"
+            # we're in "Not Registered, Not searching" or "Registration denied" state
+            # hard reset the modem and try again
+            log_message "Resetting Modem..."
+            /usr/local/bin/softresetmodem.sh
+            log_message "Giving modem 20 seconds to register..."
+            sleep 20
+            return 1
+        fi
+        if [ "$REGSTATE" == "SEARCHING" ] || [ "$REGSTATE" == "DENIED" ] 
+        then
+            log_message "Searching for network..."
+            # We're still waiting for the modem to connect to the network
+            sleep 10
+            return 1
+        fi
+            
+    done
 }
 
 # Function: checkSimPin
@@ -213,25 +220,25 @@ function checkRegState
 # Returns: 0 if SIM is unlocked or no PIN is required, 1 if PIN unlock fails
 function checkSimPin
 {
-	# Check for SIM PIN details
-	if [ -e /etc/sim.conf ]
-	then
-		. /etc/sim.conf
-		if [ "$SIMPIN" != "" ]
-		then
-			log_message "PIN Unlock Running"
-			qmicli -d /dev/cdc-wdm0 --dms-uim-verify-pin=PIN,$SIMPIN
-			simRetCode=$?
-			if (( $simRetCode != 0 ))
-			then
-				log_message "PIN Unlock FAILED "
-				return 1
-			fi
-			log_message "PIN Unlock OK"
-		fi
-	fi
+    # Check for SIM PIN details
+    if [ -e /etc/sim.conf ]
+    then
+        . /etc/sim.conf
+        if [ "$SIMPIN" != "" ]
+        then
+            log_message "PIN Unlock Running"
+            qmicli -d /dev/cdc-wdm0 --dms-uim-verify-pin=PIN,$SIMPIN
+            simRetCode=$?
+            if (( $simRetCode != 0 ))
+            then
+                log_message "PIN Unlock FAILED "
+                return 1
+            fi
+            log_message "PIN Unlock OK"
+        fi
+    fi
 
-	return 0
+    return 0
 }
 
 # Function: networkConnect
@@ -262,7 +269,7 @@ function networkConnect
     
     # If we've had three failed attempts to connect then softreset the modem
     log_message "Resetting Modem..."
-    # This will attempt a softreset via AT+CFUN=1,1 first, if it can't connect to the modem 
+    # This will attempt a soft-reset via AT+CFUN=1,1 first, if it can't connect to the modem 
     /usr/local/bin/softresetmodem.sh                      
     return 1
 }
@@ -292,7 +299,7 @@ function networkDisconnect
     # If we've had three failed attempts to disconnect then reset the modem
     stop_wwan0
     log_message "Resetting Modem..."
-    # this will try to softreset first then use the hardware line if it can't
+    # this will try to soft-reset first then use the hardware line if it can't
     /usr/local/bin/softresetmodem.sh                      
     # Run qmi-network-raw so we clean up any stale files
     /usr/local/bin/qmi-network-raw /dev/cdc-wdm0 stop >/dev/null
@@ -305,69 +312,69 @@ function networkDisconnect
 # Returns: 1 if connection is lost and needs to be restarted, otherwise continues monitoring
 function monitorConnection
 {
-        # Keep an eye on the state of the cellular connection
-        while true
-        do		
-			# No Byte Check #1 - Do we show as disconnected at the cellular level?
-			if qmicli -d /dev/cdc-wdm0 --wds-get-packet-service-status | grep -q "disconnected"
-			then
-				log_message "Connection disconnected, restarting..."
-				# We've disconnected for some reason
-				stop_wwan0
-				qmi-network-raw /dev/cdc-wdm0 stop
-				return 1 # exit back to start and re-connect
-			fi
+    # Delay first so if there's any issue with configuration  give some time for any updates to download
+    # Balance availability with data usage to check connection.
+    sleep $CheckInternal
+    # Keep an eye on the state of the cellular connection
+    while true
+    do        
+        # No Byte Check #1 - Do we show as disconnected at the cellular level?
+        if qmicli -d /dev/cdc-wdm0 --wds-get-packet-service-status | grep -q "disconnected"
+        then
+            log_message "Connection disconnected, restarting..."
+            # We've disconnected for some reason
+            stop_wwan0
+            qmi-network-raw /dev/cdc-wdm0 stop
+            return 1 # exit back to start and re-connect
+        fi
 
-			# No Byte Check #2 - Do we show as disconnected at the network operator level?
-			if qmicli -d /dev/cdc-wdm0 --nas-get-serving-system | grep -q "not-registered"
-			then
-				# We've disconnected for some reason
-				log_message "Network disconnected, restarting..."
-				stop_wwan0
-				qmi-network-raw /dev/cdc-wdm0 stop
-				return 1 # exit back to start and re-connect
-			fi
+        # No Byte Check #2 - Do we show as disconnected at the network operator level?
+        if qmicli -d /dev/cdc-wdm0 --nas-get-serving-system | grep -q "not-registered"
+        then
+            # We've disconnected for some reason
+            log_message "Network disconnected, restarting..."
+            stop_wwan0
+            qmi-network-raw /dev/cdc-wdm0 stop
+            return 1 # exit back to start and re-connect
+        fi
 
-			# We often find long standing cellular internet connections appear connected but get "muted" by the base station so 
-			# need refreshing periodicatlly. The best way to validate your connection is to do a remote http check to a known server.
-			#
-			# This check uses cellular data so there's a balance to be had with maintaining connection uptime vs cost.     
-			#			
-			if [ "$DoEndToEndCheck" = true ]; then
-				max_attempts=3
-				# This is the standard MS Windows network connectivity check server,
-				# ideally should be YOUR server.
-				websiteToCheck="http://www.msftncsi.com/ncsi.txt"
+        # We often find long standing cellular internet connections appear connected but get "muted" by the base station so 
+        # need refreshing periodically. The best way to validate your connection is to do a remote http check to a known server.
+        #
+        # This check uses cellular data so there's a balance to be had with maintaining connection uptime vs cost.     
+        #            
+        if [ "$DoEndToEndCheck" = true ]; then
+            max_attempts=3
+            # This is the standard MS Windows network connectivity check server,
+            # ideally should be YOUR server.
+            websiteToCheck="http://www.msftncsi.com/ncsi.txt"
 
-				for ((attempt=1; attempt<=max_attempts; attempt++))
-				do
-					log_message "Running End-to-end transaction check (attempt $attempt/$max_attempts)"
-					
-					# This is robust... 
-					# curl -I -s --connect-timeout 5 --max-time 10 $websiteToCheck | grep "HTTP/1.1 200 OK"
-					# ...but This uses less network bytes :
-					wget -q --spider --timeout=5 --tries=1 --dns-timeout=5 $websiteToCheck
-					returnCode=$?
-					
-					if (( $returnCode == 0 )); then
-						log_message "End-to-end check successful"
-						break
-					elif (( $attempt < max_attempts )); then
-						log_message "Check failed. Trying again in 10 seconds..."
-						sleep 10
-					else
-						log_message "All attempts failed. Can't communicate with remote server, restarting..."
-						return 1
-					fi
-				done
-			fi
+            for ((attempt=1; attempt<=max_attempts; attempt++))
+            do
+                log_message "Running End-to-end transaction check (attempt $attempt/$max_attempts)"
+                
+                # This is robust... 
+                # curl -I -s --connect-timeout 5 --max-time 10 $websiteToCheck | grep "HTTP/1.1 200 OK"
+                # ...but This uses less network bytes :
+                wget -q --spider --timeout=5 --tries=1 --dns-timeout=5 $websiteToCheck
+                returnCode=$?
+                
+                if (( $returnCode == 0 )); then
+                    log_message "End-to-end check successful"
+                    break
+                elif (( $attempt < max_attempts )); then
+                    log_message "Check failed. Trying again in 10 seconds..."
+                    sleep 10
+                else
+                    log_message "All attempts failed. Can't communicate with remote server, restarting..."
+                    return 1
+                fi
+            done
+        fi
 
-			log_message "Network check AOK"
-			
-			# Balance availability with data usage to check connection.
-			sleep $CheckInternal
-				
-        done
+        log_message "Network check AOK"
+                        
+    done
 }
 
 ###############################################################################
@@ -380,16 +387,16 @@ function monitorConnection
 # Function to import settings from /etc/sim.conf
 function import_settings() 
 {
-	if [ -f "/etc/sim.conf" ]; then
-		if [ -r "/etc/sim.conf" ]; then
-			source "/etc/sim.conf"
-			log_message "Settings imported from /etc/sim.conf"
-		else
-			log_message "Error: /etc/sim.conf exists but is not readable"
-		fi
-	else
-		log_message "No /etc/sim.conf file found, using default settings"
-	fi
+    if [ -f "/etc/sim.conf" ]; then
+        if [ -r "/etc/sim.conf" ]; then
+            source "/etc/sim.conf"
+            log_message "Settings imported from /etc/sim.conf"
+        else
+            log_message "Error: /etc/sim.conf exists but is not readable"
+        fi
+    else
+        log_message "No /etc/sim.conf file found, using default settings"
+    fi
 }
 
 # Function: firststart
@@ -399,8 +406,8 @@ function import_settings()
 # Returns: transfers to 'start' function
 function firststart() 
 {
-	# Give a standard SIM a few mins to register on the network before hassling it. 
-	# SIMs which roam by default like Hologram, WhereverSIM etc need much longer on first powerup
+    # Give a standard SIM a few mins to register on the network before hassling it. 
+    # SIMs which roam by default like Hologram, WhereverSIM etc need much longer on first powerup
 
     log_message "Performing first start procedure..."
     import_settings    
@@ -535,10 +542,10 @@ function run_monitor()
 {
     sleep 3 
     while true; do 
-	# infinite loop
+    # infinite loop
         monitorConnection
-		# if we exit the above function the cellular network is confirmed down
-		# so restart it then go back into main monitor function
+        # if we exit the above function the cellular network is confirmed down
+        # so restart it then go back into main monitor function
         if [ $? -ne 0 ]; then
             log_message "Connection lost. Attempting to reconnect..."
             networkDisconnect
@@ -560,15 +567,15 @@ function status()
     else
         echo "  Disconnected"
     fi
-	
-    echo "Network information:"
-	qmicli -d /dev/cdc-wdm0  --nas-get-serving-system 
     
-	if is_monitor_running; then
+    echo "Network information:"
+    qmicli -d /dev/cdc-wdm0  --nas-get-serving-system 
+    
+    if is_monitor_running; then
         echo "Monitor is running. PID: $(cat $PID_FILE)"
     else
         echo "Monitor is not running."
-    fi	
+    fi    
 }
 
 # Function: restart
@@ -577,7 +584,7 @@ function status()
 # Returns: None
 function restart() 
 {
-	stop_monitor
+    stop_monitor
     stop
     start
 }
@@ -594,7 +601,7 @@ check_dependencies
 case "$1" in
     first-start)
         firststart
-	;;
+    ;;
     start)
         start
         ;;
@@ -614,9 +621,10 @@ case "$1" in
         stop_monitor
         ;;
     runmonitor)
-	run_monitor
-	;;
+    run_monitor
+    ;;
     *)
+        echo "ConnManager v1.0"
         echo "Usage: $0 {first-start|start|stop|restart|status|start-monitor|stop-monitor}"
         exit 1
         ;;
