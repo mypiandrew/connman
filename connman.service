@@ -1,0 +1,13 @@
+[Unit]
+Description=Connman Start and Monitor Service
+After=network.target network-online.target systemd-networkd.service systemd-resolved.service
+Wants=network-online.target
+ConditionPathExists=/usr/local/bin/connman
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c '/usr/local/bin/connman start && /usr/local/bin/connman start-monitor'
+ExecStop=/usr/local/bin/connman stop
+
+[Install]
+WantedBy=multi-user.target
