@@ -15,10 +15,11 @@ This repository contains a cellular network connection supervisor script for Ras
 
 ## Usage
 
-The main script is `connman.sh`, which can be used as follows:
+The main script is `connman`, which can be used as follows:
 
 ```
-Usage: /usr/local/bin/connman.sh {first-start|start|stop|restart|status|start-monitor|stop-monitor}
+ConnManager v1.0
+Usage: /usr/local/bin/connman {first-start|start|stop|restart|status|start-monitor|stop-monitor}
 ```
 
 ### Example: Starting the Connection
