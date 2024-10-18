@@ -6,7 +6,7 @@ ConditionPathExists=/usr/local/bin/connman
 
 [Service]
 Type=simple
-ExecStart=/bin/bash -c '/usr/local/bin/connman start && /usr/local/bin/connman start-monitor'
+ExecStart=/bin/bash -c '/usr/local/bin/connman first-start || /usr/local/bin/connman start-monitor'
 ExecStop=/usr/local/bin/connman stop
 
 [Install]
