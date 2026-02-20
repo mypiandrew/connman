@@ -10,8 +10,8 @@ This repository contains a cellular network connection supervisor script for Ras
 - `/etc/sim.conf`
 - `/usr/local/bin/softresetmodem.sh`
 - `/etc/qmi-network.conf`
-- `/etc/udev/rules.d/20-modem-ec2x.rules`
-- `/etc/udev/rules.d/20-modem-7xxx.rules`
+- `/etc/udev/rules.d/90-modem-ec2x.rules`
+- `/etc/udev/rules.d/90-modem-7xxx.rules`
 
 ## Usage
 
@@ -112,6 +112,12 @@ Edit variables at top of script for network check intervals
 Can log to /var/log/connman.log
 
 ## Troubleshooting
+
+Ensure "ppp" package is installed for the "chat" program which is needed by modemstat
+
+```
+# apt install ppp
+```
 
 If you encounter any issues, check the following:
 
