@@ -1,15 +1,16 @@
 [Unit]
 Description=Connman Start and Monitor Service
-After=network.target network-online.target systemd-networkd.service systemd-resolved.service
-Wants=network-online.target
+After=network.target
 ConditionPathExists=/usr/local/bin/connman
 
 [Service]
 Type=simple
-ExecStart=/bin/bash -c '/usr/local/bin/connman first-start || /usr/local/bin/connman start-monitor'
+ExecStart=/usr/local/bin/connman run
 ExecStop=/usr/local/bin/connman stop
-Restart=on-failure 
+Restart=on-failure
 RestartSec=30
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Install]
 WantedBy=multi-user.target
