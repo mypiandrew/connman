@@ -2,9 +2,9 @@
 #
 # Connection ManagerScript  - embeddedpi.com
 #
-# Release : 14/10/2024  RAW IP VERSION
+# Release : 20/12/2026  RAW IP VERSION
 #
-# Copyright (c) 2024 Andrew O'Connell and others
+# Copyright (c) 2024-2026 Andrew O'Connell and others
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -411,6 +411,34 @@ function import_settings()
     fi
 }
 
+# Function: run
+# Description: Systemd entrypoint. Handles first-boot SIM registration delay using a flag file
+#              in /run (tmpfs, resets on reboot). Connects to the cellular network then blocks in
+#              the monitor loop as a single foreground process for systemd to manage.
+# Parameters: None
+# Returns: 1 if connection fails (triggers systemd Restart=on-failure), otherwise blocks in monitor
+function run()
+{
+    import_settings
+    
+    # /run is tmpfs so this flag resets on every reboot
+    # First boot gets the delay, systemd restarts within the same boot skip it
+    if [ ! -f /run/connman-first-done ]; then
+        log_message "First start - waiting $STARTUP_DELAY for SIM to register..."
+        sleep $STARTUP_DELAY
+        touch /run/connman-first-done
+    fi
+    
+    start
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    
+    # Block here in the monitor loop — this IS the main process
+    run_monitor
+}
+
+
 # Function: firststart
 # Description: Add a delay before attempting to startup the modem communications as SIMs often take a 
 #              a few mins to survey and register on networks at inital power up.
@@ -633,8 +661,11 @@ case "$1" in
         stop_monitor
         ;;
     runmonitor)
-    run_monitor
-    ;;
+        run_monitor
+        ;;
+	run)
+        run
+        ;;			
     *)
         echo "ConnManager v1.0"
         echo "Usage: $0 {first-start|start|stop|restart|status|start-monitor|stop-monitor}"
