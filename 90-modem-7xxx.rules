@@ -1,0 +1,30 @@
+############################################################################
+# 90-modem-7xxx.rules
+#
+# SIMCOM 71xx Modem Rules
+#
+# Create symlinks for SIMCOM USB modem interfaces
+# Uses ENV{} properties - no parent traversal, no USB path dependency
+# Works on any board regardless of USB topology
+#
+# /dev/modemS3 = Modem PPP Data port
+#                Used to instantiate a PPP data connection only
+#
+# /dev/modemS2 = Modem AT command port, all AT commands supported.
+#                Can be used when PPP Data port active.
+#
+# /dev/modemS1 = NMEA Feed (activated by AT+CGPSCOLD and pre-configured
+#                by AT+CGPSNMEA=xxx)
+#
+#
+# Author:       Andrew O'Connell
+# Last Revised: 20th February 2026
+# Created:      27th April 2016
+############################################################################
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="1e0e", ENV{ID_USB_INTERFACE_NUM}=="00", SYMLINK+="modemS0"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="1e0e", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="modemS1"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="1e0e", ENV{ID_USB_INTERFACE_NUM}=="02", SYMLINK+="modemS2"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="1e0e", ENV{ID_USB_INTERFACE_NUM}=="03", SYMLINK+="modemS3"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="1e0e", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="modemGPS"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="1e0e", ENV{ID_USB_INTERFACE_NUM}=="02", SYMLINK+="modemAT"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="1e0e", ENV{ID_USB_INTERFACE_NUM}=="03", SYMLINK+="modemPPP"

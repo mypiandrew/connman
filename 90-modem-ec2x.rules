@@ -1,0 +1,30 @@
+############################################################################
+# 20-modem-ec2x.rules
+#
+# Quectel EC2x Series Rules
+#
+# Create symlinks for Quectel USB modem interfaces
+# Uses vendor ID matching - no USB path dependency, works on any board
+#
+# /dev/modemPPP = Modem PPP Data port, limited AT command support
+#                Used to instantiate a PPP data connection only
+#
+# /dev/modemAT  = Modem AT command port, all AT commands supported.
+#                Can be used when PPP Data port active.
+#                Can also be used to instantiate a PPP data connection
+#
+# /dev/modemGPS = NMEA GPS Feed
+#
+#
+# Author:       Andrew O'Connell
+# Last Revised: 20th February 2026
+# Created:      30th August 2016
+############################################################################
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="2c7c", ENV{ID_USB_INTERFACE_NUM}=="00", SYMLINK+="modemS0"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="2c7c", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="modemS1"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="2c7c", ENV{ID_USB_INTERFACE_NUM}=="02", SYMLINK+="modemS2"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="2c7c", ENV{ID_USB_INTERFACE_NUM}=="03", SYMLINK+="modemS3"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="2c7c", ENV{ID_USB_INTERFACE_NUM}=="04", SYMLINK+="modemS4"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="2c7c", ENV{ID_USB_INTERFACE_NUM}=="02", SYMLINK+="modemPPP"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="2c7c", ENV{ID_USB_INTERFACE_NUM}=="03", SYMLINK+="modemAT"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="2c7c", ENV{ID_USB_INTERFACE_NUM}=="01", SYMLINK+="modemGPS"
