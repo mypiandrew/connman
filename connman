@@ -2,7 +2,17 @@
 #
 # Connection ManagerScript  - embeddedpi.com
 #
-# Release : 20/12/2026  RAW IP VERSION
+# Release : 28/10/2026  RAW IP VERSION  v1.1
+#
+# Changes in v1.1
+#  - FIX: monitor check interval now applied on every loop pass. Previously the
+#         sleep ran once before the loop, so after the first interval the monitor
+#         ran checks back-to-back (~1/sec), using ~250MB/day of cellular data.
+#  - FIX: monitor now writes its own PID file, so 'status' correctly reports the
+#         monitor as running when launched by systemd via 'run'.
+#  - FIX: checkRegState no longer spins forever on an unhandled registration state.
+#  - Minor: signal strength messages no longer overlap, restart no longer calls
+#           stop_monitor twice.
 #
 # Copyright (c) 2024-2026 Andrew O'Connell and others
 #
@@ -44,7 +54,9 @@ PID_FILE="/var/run/modem-monitor.pid"
 # SIMs which roam by default like Hologram, WhereverSIM etc need much longer on first powerup
 STARTUP_DELAY="2m" 
 
-# This sets how often the monitor function 
+# How often the monitor checks the connection. Each end-to-end check uses roughly
+# 2-3KB of cellular data (DNS + TCP + HTTP headers), so 30m is about 4MB/month.
+# Can be overridden in /etc/sim.conf
 CheckInternal="30m" # 30 min check period
 
 # Function to log messages
@@ -142,14 +154,11 @@ function init
 }
 
 # Function: checkRegState
-# Description: Checks the registration state of the modem and waits for it to register on the network.
+# Description: Checks the registration state of the modem.
 # Parameters: None
-# Returns: 0 if registered successfully, 1 if failed to register
+# Returns: 0 if registered, 1 if not registered (caller retries)
 function checkRegState
 {
-
-
-
     # Get details from modem using modemstat
     #MODEMVENDOR=QUECTEL
     #IMEI=867624063556764
@@ -171,59 +180,48 @@ function checkRegState
         exit 1 
     fi
 
-    # let's verify that we are registered on cellular the network before we proceed
-    while true
-    do
+    if (( SIGNAL == 99 ))
+    then
+        log_message "No signal detected - Check antenna pigtail & antenna. "
+    elif (( SIGNAL <= 5 ))
+    then
+        log_message "Signal strength very low, expect problems obtaining a connection, re-orient or upgrade antenna  - $SIGNAL/32"
+    elif (( SIGNAL <= 10 ))
+    then
+        log_message "Signal strength low, re-orient or upgrade antenna  - $SIGNAL/32"
+    else
+        log_message "Signal strength - $SIGNAL/32"
+    fi
 
-        if (( $SIGNAL >= 10 ))
-        then
-            log_message "Signal strength - $SIGNAL/32"
-        fi
-
-        if (( $SIGNAL <= 10  && $SIGNAL > 5 ))
-        then
-            log_message "Signal strength low, re-orient or upgrade antenna  - $SIGNAL/32"
-                
-        fi
-
-        if (( $SIGNAL <= 5 ))
-        then
-            log_message "Signal strength very low, expect problems obtaining a connection, re-orient or upgrade antenna  - $SIGNAL/32"
-        fi
-
-        if (( $SIGNAL == 99 ))
-        then
-            log_message "No signal detected - Check antenna pigtail & antenna. "
-        fi
-
-        
-        if [ "$REGSTATE" == "REGISTERED-HOME" ] || [ "$REGSTATE" == "REGISTERED-ROAMING" ]
-        then
+    case "$REGSTATE" in
+        REGISTERED-HOME|REGISTERED-ROAMING)
             log_message "Registered OK on network : $REGSTATE"
             log_message "Network ID : $NETWORKID  Mode : $MODEMMODE / $MODEMBAND"
             return 0
-        fi
-
-        if [ "$REGSTATE" == "NOT-REGISTERED" ] || [ "$REGSTATE" == "DENIED" ]
-        then
+            ;;
+        NOT-REGISTERED|DENIED)
             log_message "Failed to register on network"
             # we're in "Not Registered, Not searching" or "Registration denied" state
-            # hard reset the modem and try again
+            # reset the modem and try again
             log_message "Resetting Modem..."
             /usr/local/bin/softresetmodem.sh
             log_message "Giving modem 20 seconds to register..."
             sleep 20
             return 1
-        fi
-        if [ "$REGSTATE" == "SEARCHING" ] || [ "$REGSTATE" == "DENIED" ] 
-        then
+            ;;
+        SEARCHING)
             log_message "Searching for network..."
             # We're still waiting for the modem to connect to the network
             sleep 10
             return 1
-        fi
-            
-    done
+            ;;
+        *)
+            # Unknown or empty state - don't spin, back off and let caller retry
+            log_message "Unexpected registration state '$REGSTATE', retrying..."
+            sleep 10
+            return 1
+            ;;
+    esac
 }
 
 # Function: checkSimPin
@@ -319,17 +317,19 @@ function networkDisconnect
 }
 
 # Function: monitorConnection
-# Description: Monitors the state of the cellular connection and performs periodic checks.
+# Description: Monitors the state of the cellular connection, checking once every $CheckInternal.
 # Parameters: None
 # Returns: 1 if connection is lost and needs to be restarted, otherwise continues monitoring
 function monitorConnection
 {
-    # Delay first so if there's any issue with configuration  give some time for any updates to download
-    # Balance availability with data usage to check connection.
-    sleep $CheckInternal
     # Keep an eye on the state of the cellular connection
     while true
     do        
+        # Wait BEFORE each check (including the first) so the interval applies to
+        # every pass, and any config/update downloads get time after a (re)connect.
+        # Balance availability with data usage to check connection.
+        sleep $CheckInternal
+
         # No Byte Check #1 - Do we show as disconnected at the cellular level?
         if qmicli -d /dev/cdc-wdm0 --wds-get-packet-service-status | grep -q "disconnected"
         then
@@ -434,7 +434,7 @@ function run()
         return 1
     fi
     
-    # Block here in the monitor loop — this IS the main process
+    # Block here in the monitor loop - this IS the main process
     run_monitor
 }
 
@@ -478,7 +478,7 @@ function start()
 {
     if is_modem_connected; then
         log_message "Modem connection is already active."
-        return
+        return 0
     fi
     init
     checkRegState
@@ -503,8 +503,6 @@ function start()
 }
 
 
-
-
 # Function: stop
 # Description: Stops the modem connection and the monitor process.
 # Parameters: None
@@ -522,7 +520,8 @@ function stop()
 }
 
 # Function: start_monitor
-# Description: Starts the monitoring process for the modem connection.
+# Description: Starts the monitoring process for the modem connection in the background.
+#              The child process writes its own PID file (see run_monitor).
 # Parameters: None
 # Returns: None
 function start_monitor() 
@@ -549,12 +548,13 @@ function start_monitor()
 # Returns: None
 function stop_monitor() 
 {
-    if [ -f "$PID_FILE" ]; then
+    if is_monitor_running; then
         pid=$(cat "$PID_FILE")
         kill $pid
-        rm "$PID_FILE"
+        rm -f "$PID_FILE"
         log_message "Monitor process stopped."
     else
+        rm -f "$PID_FILE"   # clear any stale PID file
         log_message "Monitor is not running."
     fi
 }
@@ -576,10 +576,15 @@ function is_monitor_running()
 
 # Function: run_monitor
 # Description: Runs the main monitoring loop for the modem connection.
+#              Records its own PID so 'status' works whether launched by
+#              start-monitor (background) or run (systemd foreground).
 # Parameters: None
 # Returns: None
 function run_monitor() 
 {
+    echo $$ > "$PID_FILE"
+    trap 'rm -f "$PID_FILE"' EXIT
+
     sleep 3 
     while true; do 
     # infinite loop
@@ -612,7 +617,7 @@ function status()
     qmicli -d /dev/cdc-wdm0  --nas-get-serving-system 
     
     if is_monitor_running; then
-        echo "Monitor is running. PID: $(cat $PID_FILE)"
+        echo "Monitor is running. PID: $(cat $PID_FILE)  Check interval: $CheckInternal"
     else
         echo "Monitor is not running."
     fi    
@@ -624,8 +629,7 @@ function status()
 # Returns: None
 function restart() 
 {
-    stop_monitor
-    stop
+    stop    # stop also stops the monitor
     start
 }
 
@@ -652,6 +656,7 @@ case "$1" in
         restart
         ;;
     status)
+        import_settings >/dev/null
         status
         ;;
     start-monitor)
@@ -661,14 +666,15 @@ case "$1" in
         stop_monitor
         ;;
     runmonitor)
+        import_settings
         run_monitor
         ;;
-	run)
+    run)
         run
-        ;;			
+        ;;
     *)
-        echo "ConnManager v1.0"
-        echo "Usage: $0 {first-start|start|stop|restart|status|start-monitor|stop-monitor}"
+        echo "ConnManager v1.1"
+        echo "Usage: $0 {first-start|start|stop|restart|status|start-monitor|stop-monitor|run}"
         exit 1
         ;;
 esac

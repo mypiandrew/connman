@@ -1,16 +1,19 @@
 [Unit]
-Description=Connman Start and Monitor Service
+Description=Connman cellular connection manager (start and monitor)
 After=network.target
 ConditionPathExists=/usr/local/bin/connman
+# Start-rate limiting lives in [Unit]. 0 = never give up restarting,
+# which is what an unattended cellular gateway needs.
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/connman run
 ExecStop=/usr/local/bin/connman stop
-Restart=on-failure
+Restart=always
 RestartSec=30
-StartLimitIntervalSec=300
-StartLimitBurst=5
+# 'connman stop' can take a while if the modem needs a soft reset
+TimeoutStopSec=120
 
 [Install]
 WantedBy=multi-user.target
